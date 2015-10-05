@@ -49,7 +49,13 @@ class PolynomialRegression:
                 You need to apply polynomial expansion and scaling
                 at first
         '''
-        #TODO
+        # convert X into a n * d array of polynomial features of 
+        # degree d
+        XExpanded = polyfeatures(X, self.degree)
+
+        # add the zero-th order feature row (i.e. x_0 = 1)
+
+        # standardize the data before fitting
         
         
     def predict(self, X):
@@ -60,7 +66,8 @@ class PolynomialRegression:
         Returns:
             an n-by-1 numpy array of the predictions
         '''
-        # TODO
+        
+        # standardize the data before predicting
 
 
 

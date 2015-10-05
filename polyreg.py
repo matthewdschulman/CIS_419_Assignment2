@@ -16,7 +16,8 @@ class PolynomialRegression:
         '''
         Constructor
         '''
-        #TODO
+        self.degree = degree
+        self.regLambda = regLambda
 
 
     def polyfeatures(self, X, degree):

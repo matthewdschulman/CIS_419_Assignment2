@@ -16,7 +16,6 @@ class LogisticRegression:
         self.epsilon = epsilon
         self.maxNumIters = maxNumIters
         self.theta = None
-        self.theta_old = None
 
     def computeCost(self, theta, X, y, regLambda):
         '''
@@ -28,14 +27,10 @@ class LogisticRegression:
         Returns:
             a scalar value of the cost  ** make certain you're not returning a 1 x 1 matrix! **
         '''
-        # cost = (-y * np.log(self.sigmoid(theta.T * X)) - (1 - y)*np.log(1 - self.sigmoid(theta.T * X))) + (regLambda/2.0)*(theta * theta)
-        # return cost.item(0)
-        n, d = X.shape
-        # Cost equation implementation.
-        Store = self.sigmoid(X * theta)
-        theta_minus_0 = np.delete(theta,[0], axis=0)
-        J_cost = (-y.T * np.log(Store) - (1.0-y).T * np.log(1.0-Store) )/n + regLambda/(2.0*n) * (theta_minus_0.T * theta_minus_0)
-        return J_cost.item(0)
+        n,d = X.shape
+        cost = (-y.T * np.log(self.sigmoid(X * theta)) - (1.0 - y).T * 
+            np.log(1.0 - self.sigmoid(X * theta)))/n + regLambda/(2.0 * n) * (theta.T * theta)
+        return cost.item((0,0))
     
     def computeGradient(self, theta, X, y, regLambda):
         '''
@@ -86,7 +81,7 @@ class LogisticRegression:
             else: 
                 theta_old = np.copy(theta_new)
                 i = i + 1
-                # cost = self.computeCost(theta_new, X, y, self.regLambda)
+                cost = self.computeCost(theta_new, X, y, self.regLambda)
                 # print "cost: ", cost
 
         self.theta = theta_new
@@ -106,8 +101,10 @@ class LogisticRegression:
         Returns:
             an n-dimensional numpy vector of the predictions
         '''
-        n = X.shape[0]
-        X = np.c_[np.ones((n,1)), X]
+        a,b = X.shape
+        # add the 1's features
+        X = np.c_[np.ones((a,1)), X]
+        # use the sigmoid method to predict the values for X
         return np.array(self.sigmoid(X * self.theta))
 
     def sigmoid(self, z):

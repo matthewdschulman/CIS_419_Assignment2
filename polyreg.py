@@ -110,13 +110,14 @@ class PolynomialRegression:
                 XExpandedNPCopy[x][z] = XExpandedNP[x][z]
 
         # standardize the data before fitting
-        for x in range(0, X.size):
-            for deg in range(1, self.degree + 1):
-                curCol = XExpandedNPCopy[:,deg]
-                curColMean = curCol.mean()
-                curColStd = curCol.std()
-                newVal = (XExpandedNP[x][deg] - curColMean) / curColStd
-                XExpandedNP[x][deg] = newVal
+        if len(X) > 1:
+            for x in range(0, X.size):
+                for deg in range(1, self.degree + 1):
+                    curCol = XExpandedNPCopy[:,deg]
+                    curColMean = curCol.mean()
+                    curColStd = curCol.std()
+                    newVal = (XExpandedNP[x][deg] - curColMean) / curColStd
+                    XExpandedNP[x][deg] = newVal
 
         return XExpandedNP.dot(self.theta)
 
@@ -155,4 +156,45 @@ def learningCurve(Xtrain, Ytrain, Xtest, Ytest, regLambda, degree):
     
     #TODO -- complete rest of method; errorTrain and errorTest are already the correct shape
     
+    modelTrain = PolynomialRegression(degree = degree, regLambda = regLambda)
+
+    # training
+    i = 2
+    while i < n:
+        modelTrain.fit(Xtrain[0:i], Ytrain[0:i])
+        predictions = modelTrain.predict(Xtrain[0:i])
+
+        cumSumError = 0
+        t = 0
+        while t < i:
+            cumSumError += (predictions[t] - Ytrain[t])**2
+            t += 1
+        
+        cumSumError = cumSumError / n
+        errorTrain[i] = cumSumError
+        i += 1
+
+    modelTest = PolynomialRegression(degree = degree, regLambda = regLambda)
+
+    # testing
+    #standardize Xtest based on the training mean and standard deviation
+    for i in range(0, len(Xtest)):
+        Xtest[i] = (Xtest[i] - Xtrain.mean())/(Xtrain.std())
+
+    i = 2
+    while i < n:
+        modelTest.fit(Xtrain[0:i], Ytrain[0:i])
+
+        predictions = modelTest.predict(Xtest)
+        cumSumError = 0
+
+        t = 0
+        while t < len(predictions):
+            cumSumError += (predictions[t] - Ytest[t])**2
+            t += 1
+        
+        cumSumError = cumSumError / n
+        errorTest[i] = cumSumError
+        i += 1
+
     return (errorTrain, errorTest)

@@ -20,7 +20,7 @@ def myPolynomialKernel(X1, X2):
         Returns:
             An n1-by-n2 numpy array representing the Kernel (Gram) matrix
     '''
-    return #TODO
+    return (np.dot(X1, X2.T) + 1) ** _polyDegree
 
 
 
@@ -32,7 +32,19 @@ def myGaussianKernel(X1, X2):
         Returns:
             An n1-by-n2 numpy array representing the Kernel (Gram) matrix
     '''
-    return #TODO
+    n1,d1 = X1.shape
+    n2,d2 = X2.shape
+
+    # find the distance between the v and w vectors to be used in the 
+    # K(v,w) equation
+    distance = np.zeros((n1, n2))
+    for i in range(0, n2):
+      distance[:,i] = np.sum((X1 - X2[i,:]) ** 2, axis = 1)
+
+    # compute the K(v,w) equation
+    numerator = -distance
+    denominator = 2 * (_gaussSigma ** 2)
+    return np.exp(numerator / denominator)
 
 
 

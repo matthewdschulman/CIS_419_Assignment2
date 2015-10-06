@@ -19,6 +19,8 @@ class PolynomialRegression:
         self.degree = degree
         self.regLambda = regLambda
         self.theta = None
+        self.mean = None
+        self.std = None
 
 
     def polyfeatures(self, X, degree):
@@ -60,25 +62,20 @@ class PolynomialRegression:
         # degree d
         XExpanded = self.polyfeatures(X, self.degree)
 
-        # add the zero-th order feature row (i.e. x_0 = 1)
-        for x in range(0, X.size):
-            XExpanded[x].insert(0, 1)
-
         XExpandedNP = np.array(XExpanded)
-        n,d = XExpandedNP.shape
-        XExpandedNPCopy = np.zeros((n,d))
-        for x in range(0, n):
-            for z in range(0, d):
-                XExpandedNPCopy[x][z] = XExpandedNP[x][z]
 
-        # standardize the data before fitting
-        for x in range(0, X.size):
-            for deg in range(1, self.degree + 1):
-                curCol = XExpandedNPCopy[:,deg]
-                curColMean = curCol.mean()
-                curColStd = curCol.std()
-                newVal = (XExpandedNP[x][deg] - curColMean) / curColStd
-                XExpandedNP[x][deg] = newVal
+        # get std and mean for training data (to be used for testing as well)
+        std = np.std(XExpandedNP, axis=0)
+        mean = np.mean(XExpandedNP, axis=0)
+        self.std = std
+        self.mean = mean
+
+        # standardize data
+        XExpandedNP = (XExpandedNP - mean) / std
+
+        # add the zero-th order feature row (i.e. x_0 = 1)
+        XExpandedNP = np.c_[np.ones((XExpandedNP.shape[0],1)), XExpandedNP]
+
         # fit
         n,d = XExpandedNP.shape
         d = d - 1
@@ -95,29 +92,14 @@ class PolynomialRegression:
         Returns:
             an n-by-1 numpy array of the predictions
         '''       
-
         XExpanded = self.polyfeatures(X, self.degree)
+        XExpandedNP = np.array(XExpanded)
+
+        # standardize data based on training means and stds
+        XExpandedNP = (XExpandedNP - self.mean) / self.std
 
         # add the zero-th order feature row (i.e. x_0 = 1)
-        for x in range(0, X.size):
-            XExpanded[x].insert(0, 1)
-
-        XExpandedNP = np.array(XExpanded)
-        n,d = XExpandedNP.shape
-        XExpandedNPCopy = np.zeros((n,d))
-        for x in range(0, n):
-            for z in range(0, d):
-                XExpandedNPCopy[x][z] = XExpandedNP[x][z]
-
-        # standardize the data before fitting
-        if len(X) > 1:
-            for x in range(0, X.size):
-                for deg in range(1, self.degree + 1):
-                    curCol = XExpandedNPCopy[:,deg]
-                    curColMean = curCol.mean()
-                    curColStd = curCol.std()
-                    newVal = (XExpandedNP[x][deg] - curColMean) / curColStd
-                    XExpandedNP[x][deg] = newVal
+        XExpandedNP = np.c_[np.ones((XExpandedNP.shape[0],1)), XExpandedNP]
 
         return XExpandedNP.dot(self.theta)
 
@@ -156,45 +138,15 @@ def learningCurve(Xtrain, Ytrain, Xtest, Ytest, regLambda, degree):
     
     #TODO -- complete rest of method; errorTrain and errorTest are already the correct shape
     
-    modelTrain = PolynomialRegression(degree = degree, regLambda = regLambda)
-
-    # training
-    i = 2
-    while i < n:
-        modelTrain.fit(Xtrain[0:i], Ytrain[0:i])
-        predictions = modelTrain.predict(Xtrain[0:i])
-
-        cumSumError = 0
-        t = 0
-        while t < i:
-            cumSumError += (predictions[t] - Ytrain[t])**2
-            t += 1
-        
-        cumSumError = cumSumError / n
-        errorTrain[i] = cumSumError
-        i += 1
-
-    modelTest = PolynomialRegression(degree = degree, regLambda = regLambda)
-
-    # testing
-    #standardize Xtest based on the training mean and standard deviation
-    for i in range(0, len(Xtest)):
-        Xtest[i] = (Xtest[i] - Xtrain.mean())/(Xtrain.std())
+    model = PolynomialRegression(degree = degree, regLambda = regLambda)
 
     i = 2
     while i < n:
-        modelTest.fit(Xtrain[0:i], Ytrain[0:i])
-
-        predictions = modelTest.predict(Xtest)
-        cumSumError = 0
-
-        t = 0
-        while t < len(predictions):
-            cumSumError += (predictions[t] - Ytest[t])**2
-            t += 1
-        
-        cumSumError = cumSumError / n
-        errorTest[i] = cumSumError
+        model.fit(Xtrain[0:i], Ytrain[0:i])
+        predictions_train = model.predict(Xtrain[0:i])
+        predictions_test = model.predict(Xtest)
+        errorTrain[i] = 1.0/i  * sum((predictions_train - Ytrain[0:i]) ** 2)
+        errorTest[i]  = 1.0/(len(Xtest)) * sum((predictions_test - Ytest) ** 2)
         i += 1
 
     return (errorTrain, errorTest)
